@@ -47,17 +47,29 @@ async function menuClases() {
             break;
 
         case '2':
-            const clases = await claseService.listarClasesActivas();
-            console.table(clases);
+            let clases = await claseService.listarClasesActivas();
+            clases = clases.map(c=> ({
+                    ...c,
+                    disciplina: c.disciplina.nombre,
+                    intensidad: c.disciplina.intensidad
+                }));
+            console.table(clases, ["disciplina", "intensidad", "dias", "horario_inicio", "cupo_maximo"]);
             break;
 
         case '3':
             try {
-                const id = await cuestionario('ID de la clase a modificar: ');
+                let clases = await claseService.listarClasesActivas();
+                console.log('\nClases disponibles:');
+                clases = clases.map(c=> ({
+                    ...c,
+                    disciplina: c.disciplina.nombre,
+                }));
+                console.table(clases,["disciplina","dias","horario_inicio","cupo_maximo"]);
+                const id = await cuestionario('Indice de la clase a modificar: ');
                 const nuevoCupo = await cuestionario('Nuevo cupo máximo (Enter para omitir): ');
 
                 if (nuevoCupo) {
-                    await claseService.actualizarClase(id, { cupo_maximo: parseInt(nuevoCupo) });
+                    await claseService.actualizarClase(clases[id]._id, { cupo_maximo: parseInt(nuevoCupo) });
                     console.log('✅ Clase actualizada.');
                 } else {
                     console.log('ℹ️ Sin cambios.');
@@ -69,8 +81,15 @@ async function menuClases() {
 
         case '4':
             try {
+                let clases = await claseService.listarClasesActivas();
+                console.log('\nClases disponibles:');
+                clases = clases.map(c=> ({
+                    ...c,
+                    disciplina: c.disciplina.nombre,
+                }));
+                console.table(clases,["disciplina","dias","horario_inicio","cupo_maximo"]);
                 const id = await cuestionario('ID de la clase a dar de baja: ');
-                await claseService.bajaLogicaClase(id);
+                await claseService.bajaLogicaClase(clases[id]._id);
                 console.log('⚠️ Clase dada de baja (lógica).');
             } catch (error) {
                 console.error('❌ Error al dar de baja:', error.message);
@@ -108,23 +127,27 @@ async function menuProfesores() {
 
         case '2':
             const profesores = await profesorService.listarProfesoresActivos();
-            console.table(profesores);
+            console.table(profesores, ["nombre", "apellido", "dni", "especialidades"]);
             break;
 
         case '3':
             try {
-                const id = await cuestionario('ID del profesor a actualizar: ');
+                let profesores = await profesorService.listarProfesoresActivos();
+                console.table(profesores, ["nombre", "apellido", "dni", "especialidades"]);
+                const id = await cuestionario('Indice del profesor a actualizar: ');
                 console.log('Ingresa los nuevos datos (presiona Enter para dejar igual):');
 
                 const nombre = await cuestionario('Nuevo Nombre: ');
                 const apellido = await cuestionario('Nuevo Apellido: ');
+                const especialidades = await cuestionario('Nuevas Especialidades (separadas por coma): ');
 
                 const campos = {};
                 if (nombre) campos.nombre = nombre;
                 if (apellido) campos.apellido = apellido;
+                if (especialidades) campos.especialidades = especialidades.split(',').map(e => e.trim());
 
                 if (Object.keys(campos).length > 0) {
-                    await profesorService.actualizarProfesor(id, campos);
+                    await profesorService.actualizarProfesor(profesores[id]._id, campos);
                     console.log('✅ Profesor actualizado.');
                 } else {
                     console.log('ℹ️ Sin cambios.');
@@ -136,8 +159,10 @@ async function menuProfesores() {
 
         case '4':
             try {
-                const id = await cuestionario('ID del profesor a dar de baja: ');
-                await profesorService.bajaLogicaProfesor(id);
+                let profesores = await profesorService.listarProfesoresActivos();
+                console.table(profesores, ["nombre", "apellido", "dni", "especialidades"]);
+                const id = await cuestionario('Indice del profesor a dar de baja: ');
+                await profesorService.bajaLogicaProfesor(profesores[id]._id);
                 console.log('⚠️ Profesor dado de baja (lógica).');
             } catch (error) {
                 console.error('❌ Error al dar de baja:', error.message);
@@ -169,11 +194,13 @@ async function menuSocios() {
             break;
         case '2':
             const socios = await socioService.listarSociosActivos();
-            console.table(socios); // console.table se ve genial para listar
+            console.table(socios, ["nombre", "apellido", "dni", "email"]); // console.table se ve genial para listar
             break;
         case '3':
             try {
-                const id = await cuestionario('ID del socio a actualizar: ');
+                let socios = await socioService.listarSociosActivos();
+                console.table(socios, ["nombre", "apellido", "dni", "email"]);
+                const id = await cuestionario('Indice del socio a actualizar: ');
                 console.log('Ingresa los nuevos datos (presiona Enter para dejar igual):');
 
                 const nuevoNombre = await cuestionario('Nuevo Nombre: ');
@@ -186,7 +213,7 @@ async function menuSocios() {
 
                 // Solo llamamos al servicio si hay algo para actualizar
                 if (Object.keys(campos).length > 0) {
-                    await socioService.actualizarSocio(id, campos);
+                    await socioService.actualizarSocio(socios[id]._id, campos);
                     console.log('✅ Socio actualizado correctamente.');
                 } else {
                     console.log('ℹ️ No se realizaron cambios.');
@@ -196,9 +223,15 @@ async function menuSocios() {
             }
             break;
         case '4':
-            const id = await cuestionario('ID del socio a dar de baja: ');
-            await socioService.bajaLogicaSocio(id);
-            console.log('⚠️ Socio dado de baja (lógica).');
+            try{
+                let socios = await socioService.listarSociosActivos();
+                console.table(socios, ["nombre", "apellido", "dni", "email"]);
+                const id = await cuestionario('Indice del socio a dar de baja: ');
+                await socioService.bajaLogicaSocio(socios[id]._id);
+                console.log('⚠️ Socio dado de baja (lógica).');
+            }catch (error) {
+                console.error('❌ Error al dar de baja el socio:', error.message);
+            }
             break;
     }
 }
@@ -231,16 +264,18 @@ async function menuTurnos() {
 
         case '2':
             const turnos = await turnoService.listarTurnosActivos();
-            console.table(turnos);
+            console.table(turnos, ["clase_id", "socio_id", "fecha_turno", "asistio"]);
             break;
 
         case '3':
             try {
-                const id = await cuestionario('ID del turno a actualizar: ');
+                let turnos = await turnoService.listarTurnosActivos();
+                console.table(turnos, ["clase_id", "socio_id", "fecha_turno", "asistio"]);
+                const id = await cuestionario('Indice del turno a actualizar: ');
                 const asistioStr = await cuestionario('¿Asistió? (true/false): ');
 
                 const asistio = asistioStr === 'true';
-                await turnoService.actualizarTurno(id, { asistio });
+                await turnoService.actualizarTurno(turnos[id]._id, { asistio });
                 console.log('✅ Asistencia actualizada.');
             } catch (error) {
                 console.error('❌ Error al actualizar asistencia:', error.message);
@@ -249,8 +284,10 @@ async function menuTurnos() {
 
         case '4':
             try {
-                const id = await cuestionario('ID del turno a cancelar: ');
-                await turnoService.bajaLogicaTurno(id);
+                let turnos = await turnoService.listarTurnosActivos();
+                console.table(turnos, ["clase_id", "socio_id", "fecha_turno", "asistio"]);
+                const id = await cuestionario('Indice del turno a cancelar: ');
+                await turnoService.bajaLogicaTurno(turnos[id]._id);
                 console.log('⚠️ Turno cancelado (baja lógica).');
             } catch (error) {
                 console.error('❌ Error al cancelar turno:', error.message);
