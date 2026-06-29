@@ -31,6 +31,10 @@ async function menuClases() {
                 const cupo_maximo = await cuestionario('Cupo máximo: ');
                 const nombreDisc = await cuestionario('Nombre disciplina: ');
                 const intensidad = await cuestionario('Intensidad (Alta/Media/Baja): ');
+
+                console.log('\n--- Lista de Profesores Activos ---');
+                let profesores = await profesorService.listarProfesoresActivos();
+                console.table(profesores, ["nombre", "apellido", "dni", "especialidades"]);
                 const profesor_id = await cuestionario('ID del Profesor: ');
 
                 await claseService.crearClase({
@@ -38,7 +42,7 @@ async function menuClases() {
                     horario_inicio,
                     cupo_maximo: parseInt(cupo_maximo),
                     disciplina: { nombre: nombreDisc, intensidad },
-                    profesor_id
+                    profesor_id: profesores[profesor_id]._id
                 });
                 console.log('✅ Clase creada correctamente.');
             } catch (error) {
@@ -48,11 +52,11 @@ async function menuClases() {
 
         case '2':
             let clases = await claseService.listarClasesActivas();
-            clases = clases.map(c=> ({
-                    ...c,
-                    disciplina: c.disciplina.nombre,
-                    intensidad: c.disciplina.intensidad
-                }));
+            clases = clases.map(c => ({
+                ...c,
+                disciplina: c.disciplina.nombre,
+                intensidad: c.disciplina.intensidad
+            }));
             console.table(clases, ["disciplina", "intensidad", "dias", "horario_inicio", "cupo_maximo"]);
             break;
 
@@ -60,11 +64,11 @@ async function menuClases() {
             try {
                 let clases = await claseService.listarClasesActivas();
                 console.log('\nClases disponibles:');
-                clases = clases.map(c=> ({
+                clases = clases.map(c => ({
                     ...c,
                     disciplina: c.disciplina.nombre,
                 }));
-                console.table(clases,["disciplina","dias","horario_inicio","cupo_maximo"]);
+                console.table(clases, ["disciplina", "dias", "horario_inicio", "cupo_maximo"]);
                 const id = await cuestionario('Indice de la clase a modificar: ');
                 const nuevoCupo = await cuestionario('Nuevo cupo máximo (Enter para omitir): ');
 
@@ -83,11 +87,11 @@ async function menuClases() {
             try {
                 let clases = await claseService.listarClasesActivas();
                 console.log('\nClases disponibles:');
-                clases = clases.map(c=> ({
+                clases = clases.map(c => ({
                     ...c,
                     disciplina: c.disciplina.nombre,
                 }));
-                console.table(clases,["disciplina","dias","horario_inicio","cupo_maximo"]);
+                console.table(clases, ["disciplina", "dias", "horario_inicio", "cupo_maximo"]);
                 const id = await cuestionario('ID de la clase a dar de baja: ');
                 await claseService.bajaLogicaClase(clases[id]._id);
                 console.log('⚠️ Clase dada de baja (lógica).');
@@ -223,13 +227,13 @@ async function menuSocios() {
             }
             break;
         case '4':
-            try{
+            try {
                 let socios = await socioService.listarSociosActivos();
                 console.table(socios, ["nombre", "apellido", "dni", "email"]);
                 const id = await cuestionario('Indice del socio a dar de baja: ');
                 await socioService.bajaLogicaSocio(socios[id]._id);
                 console.log('⚠️ Socio dado de baja (lógica).');
-            }catch (error) {
+            } catch (error) {
                 console.error('❌ Error al dar de baja el socio:', error.message);
             }
             break;
@@ -246,13 +250,24 @@ async function menuTurnos() {
     switch (op) {
         case '1':
             try {
+                let clases = await claseService.listarClasesActivas();
+                clases = clases.map(c => ({
+                    ...c,
+                    disciplina: c.disciplina.nombre,
+                }));
+                console.table(clases, ["disciplina", "dias", "horario_inicio", "cupo_maximo"]);
                 const clase_id = await cuestionario('ID de la Clase: ');
+
+                let socios = await socioService.listarSociosActivos();
+                console.table(socios, ["nombre", "apellido", "dni"]);
                 const socio_id = await cuestionario('ID del Socio: ');
+
+
                 const fecha = await cuestionario('Fecha del turno (YYYY-MM-DD): ');
 
                 await turnoService.crearTurno({
-                    clase_id,
-                    socio_id,
+                    clase_id: clases[clase_id]._id,
+                    socio_id: socios[socio_id]._id,
                     fecha_turno: new Date(fecha),
                     asistio: false // Por defecto no asistió al crear
                 });
@@ -305,58 +320,63 @@ async function menuTurnos() {
 // ==========================================
 
 async function iniciar() {
-    await conectarDB(); // Inicializa el driver nativo una sola vez
+    try {
+        await conectarDB(); // Inicializa el driver nativo una sola vez
 
-    // Bucle infinito solicitado
-    while (true) {
-        console.log('\n====================================');
-        console.log('      SISTEMA DE GESTIÓN DE CLUB    ');
-        console.log('====================================');
-        console.log('1 - CRUD de Clases');
-        console.log('2 - CRUD de Profesores');
-        console.log('3 - CRUD de Socios');
-        console.log('4 - CRUD de Turnos');
-        console.log('5 - Realizar Backup de la Base de Datos');
-        console.log('0 - Salir');
+        while (true) {
+            console.log('\n====================================');
+            console.log('      SISTEMA DE GESTIÓN DE CLUB    ');
+            console.log('====================================');
+            console.log('1 - CRUD de Clases');
+            console.log('2 - CRUD de Profesores');
+            console.log('3 - CRUD de Socios');
+            console.log('4 - CRUD de Turnos');
+            console.log('5 - Realizar Backup de la Base de Datos');
+            console.log('0 - Salir');
 
-        const opcion = await cuestionario('\nSeleccione un módulo principal (0-4): ');
+            const opcion = await cuestionario('\nSeleccione un módulo principal (0-4): ');
 
-        if (opcion === '0') {
-            console.log('\nCerrando conexiones y saliendo... ¡Hasta luego!');
-            break; // Esto rompe el bucle true inmediatamente
+            if (opcion === '0') {
+                console.log('\nCerrando conexiones y saliendo... ¡Hasta luego!');
+                break; // Esto rompe el bucle true inmediatamente
+            }
+
+            switch (opcion) {
+                case '1':
+                    await menuClases();
+                    break;
+                case '2':
+                    await menuProfesores();
+                    break;
+                case '3':
+                    await menuSocios();
+                    break;
+                case '4':
+                    await menuTurnos();
+                    break;
+                case '5':
+                    console.log('\n⏳ Iniciando respaldo...');
+                    try {
+                        await backupService.realizarBackup();
+                        console.log('✅ Backup completado con éxito.');
+                    } catch (e) {
+                        console.log('❌ Error en backup:', e.message);
+                    }
+                    break;
+                default:
+                    console.log('❌ Opción inválida. Intente de nuevo.');
+            }
         }
-
-        switch (opcion) {
-            case '1':
-                await menuClases();
-                break;
-            case '2':
-                await menuProfesores();
-                break;
-            case '3':
-                await menuSocios();
-                break;
-            case '4':
-                await menuTurnos();
-                break;
-            case '5':
-                console.log('\n⏳ Iniciando respaldo...');
-                try {
-                    await backupService.realizarBackup();
-                    console.log('✅ Backup completado con éxito.');
-                } catch (e) {
-                    console.log('❌ Error en backup:', e.message);
-                }
-                break;
-            default:
-                console.log('❌ Opción inválida. Intente de nuevo.');
-        }
+    } catch (error) {
+        console.error('❌ Error crítico en la aplicación:', error.message);
     }
+    finally {
 
-    // Estas líneas solo se ejecutan cuando el while se rompe con el break (opción 0)
-    rl.close();
-    await cerrarDB();
-    process.exit(0);
+        // Estas líneas solo se ejecutan cuando el while se rompe con el break (opción 0)
+        rl.close();
+        await cerrarDB();
+        process.exit(0);
+    }
 }
 
 // Ejecutamos la aplicación
