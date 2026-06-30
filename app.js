@@ -1,9 +1,8 @@
-// app.js
 const readline = require('readline');
 const { conectarDB, cerrarDB } = require('./db');
 const backupService = require('./services/backupService');
 
-// Importamos los servicios de cada colección (debes crear estos archivos de forma similar a productosService.js)
+// Importamos los servicios de cada colección
 const claseService = require('./services/claseService');
 const profesorService = require('./services/profesorService');
 const socioService = require('./services/socioService');
@@ -334,7 +333,7 @@ async function iniciar() {
             console.log('5 - Realizar Backup de la Base de Datos');
             console.log('0 - Salir');
 
-            const opcion = await cuestionario('\nSeleccione un módulo principal (0-4): ');
+            const opcion = await cuestionario('\nSeleccione un módulo principal (0-5): ');
 
             if (opcion === '0') {
                 console.log('\nCerrando conexiones y saliendo... ¡Hasta luego!');

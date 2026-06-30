@@ -1,10 +1,7 @@
 const {MONGO_URI} = require ('../db.js');
-
 const { exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const { obtenerDB } = require('../db');
-const { ObjectId } = require('mongodb'); // Necesario para buscar por ID en el driver nativo
 
 
 async function realizarBackup() {
@@ -18,7 +15,6 @@ async function realizarBackup() {
 
     return new Promise((resolve, reject) => {
         // Ejecuta el comando mongodump del sistema
-        console.log(`mongodump --uri="${MONGO_URI}" --out="${dirRespaldo}"`);
         exec(`mongodump --uri="${MONGO_URI}" --out="${dirRespaldo}"`, (error) => {
             if (error) reject(error);
             else resolve(dirRespaldo);
